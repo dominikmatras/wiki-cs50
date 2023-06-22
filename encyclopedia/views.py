@@ -44,8 +44,11 @@ def search(request):
             for entry in entries:
                 if query.lower() in entry.lower():
                     recommend.append(entry)  
-            return render(request, "encyclopedia/search.html", {
-                "recommend": recommend
-            })
-            
+            if recommend == []:
+                return render(request, "encyclopedia/404.html")
+            else: 
+                return render(request, "encyclopedia/search.html", {
+                    "recommend": recommend
+                })
+
 
