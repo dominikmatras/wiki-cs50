@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from . import util
-from .models import Entry
 from markdown2 import markdown
+import random
 
 def markdown_convert(title):
     markdowner = markdown(util.get_entry(title))
@@ -18,8 +18,10 @@ def index(request):
         "entries": util.list_entries()
     })
 
-def error(request):
-    return render(request, "encyclopedia/404.html")
+def error(request, message):
+    return render(request, "encyclopedia/error.html", {
+        "message": message
+    })
 
 def entries(request, title):
     if util.get_entry(title) is None:
@@ -45,10 +47,55 @@ def search(request):
                 if query.lower() in entry.lower():
                     recommend.append(entry)  
             if recommend == []:
-                return render(request, "encyclopedia/404.html")
+                return error(request, "Page not found")
             else: 
                 return render(request, "encyclopedia/search.html", {
                     "recommend": recommend
                 })
 
+def new_page(request):
+    if request.method == 'GET':
+        return render(request, "encyclopedia/new.html")
+    else: 
+        title = request.POST['title']
+        content = request.POST['content']
+        if util.get_entry(title) is not None:
+            return render(request, "encyclopedia/error.html", {
+                "message": "Page already exist!"
+            })
+        else: 
+            util.save_entry(title, content)
+            content_html = markdown_convert(title)
+            return render(request, "encyclopedia/entries.html", {
+                "title": title,
+                "content": content_html
+                 })
 
+def edit(request):
+    if request.method == 'POST':
+        title = request.POST['page_title']
+        content = util.get_entry(title)
+        return render(request, "encyclopedia/edit.html", {
+            "title": title,
+            "content": content
+        })
+    
+def save_edit(request):
+    if request.method == 'POST':
+        title = request.POST['title']
+        content = request.POST['content']
+        util.save_entry(title, content)
+        content_html = markdown_convert(title)
+        return render(request, "encyclopedia/entries.html", {
+            "title": title,
+            "content": content_html
+        })
+    
+def random_page(request):
+    allEntries = util.list_entries()
+    title = random.choice(allEntries)
+    content = markdown_convert(title)
+    return render(request, "encyclopedia/entries.html", {
+        "title": title,
+        "content": content
+    })
